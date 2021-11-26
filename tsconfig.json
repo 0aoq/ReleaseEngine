@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+      "module": "AMD",
+      "target": "ES2021",
+      "esModuleInterop": true,
+      "allowSyntheticDefaultImports": true,
+      "outDir": "./package/compiled",
+      "types": [
+        "requirejs",
+      ]
+    },
+    "exclude": [
+      "/node_modules",
+    ]
+}
