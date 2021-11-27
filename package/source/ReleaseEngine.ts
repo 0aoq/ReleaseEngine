@@ -17,25 +17,37 @@ const file = {
             .then(response => response.text())
             .then((data: any) => { callback(data) })
     },
-    LoadFile: function (path: string, type: BlobType, extraOptions: any) {
+    LoadFile: function (path: string, type: BlobType, extraOptions: any = { placement: "beforeend", doCallstack: true }) {
         file.GetFile(path, (fetchedDocument) => {
+            extraOptions.doCallstack = extraOptions.doCallstack ?? true
+
             for (let replacement of replacements) { // replace the data
                 fetchedDocument = fetchedDocument.replaceAll(replacement.start, replacement.end)
             }
 
+            fetchedDocument.split(/\n?\r/).forEach(ln => {
+                // base for including a "path: ../PATH/IMPORT" in files, and causing them to be indexed too
+                let spl = ln.split('"path: ')
+                if (spl[1]) { spl = spl[1] } else { return }; spl = spl.split('"')[0]
+                if (spl === undefined) { return }; file.LoadFile(spl, type, extraOptions)
+                if (extraOptions.doCallstack) {
+                    console.log("ReleaseEngine Callstack:"); console.table({ caller: path, called: spl })
+                }
+            })
+
             const fileUrl = file.Blobify(fetchedDocument, type) // create a url
-            switch (type) { // determine what to import
+            switch (type) { // determine what to import and how to import it
                 case "text/css": // stylesheets
                     document.head.insertAdjacentHTML("beforeend", `<link rel="stylesheet" href="${fileUrl}" class="__ReleaseEngine">`); break
                 case "text/html": // html markup
-                    if (extraOptions.placement === "start") { 
+                    if (extraOptions.placement === "start") {
                         document.body.innerHTML = `<document><!-- alt: ${fileUrl} -->\n${fetchedDocument}</document>` + document.body.innerHTML
                     } else {
                         document.body.insertAdjacentHTML(extraOptions.placement ?? "beforeend", `
                         <document><!-- alt: ${fileUrl} -->\n${fetchedDocument}</document>`)
                     }; break
                 case "text/javascript": // javascript files
-                    require([fileUrl], function($) {
+                    require([fileUrl], function ($) {
                         $.main() // run the file's main function once
                         if ($.update) {
                             setInterval($.update, 1) // run the file's update function every frame (0.1s)
@@ -82,7 +94,7 @@ export default { newFile, createReplacement }
 setInterval(() => {
     document.querySelectorAll("script").forEach(element => {
         if (!element.classList.contains("__ReleaseEngine")) {
-            element.remove()  
+            element.remove()
         }
     })
 }, 1)

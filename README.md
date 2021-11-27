@@ -27,5 +27,18 @@ Then import it into your html file normally.
 <script src="import.js" type="module"></script>
 ```
 
+Inside of files, certain replacements are done automatically, such as importing other files from within files. If `doCallstack` was enabled, requiring files from within other files will cause them to be logged to the output.
+```js
+"path: ./myFile.js"
+myFileFunction()
+```
+```css
+/* "path: ../colors.css" */
+.example {
+    color: var(--color-example)
+}
+```
+The `path` keyword should always be used instead of default import functions from the languages themselves, as those will not be traced when requiring files.
+
 ## Notes
 - Uses [RequireJS](https://github.com/requirejs/requirejs) for module requiring, and requires a basic understanding of the RequireJS syntax to be used properly.
